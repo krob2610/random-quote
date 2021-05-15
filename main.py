@@ -29,9 +29,10 @@ class Quotes:
         quotes = self.get_quotes()
 
         while True:
-            number_of_quotes = int(input())
-            if isinstance(number_of_quotes, int) and 5 <= number_of_quotes <= 20:
-                selected_quotes = random.sample(range(0, len(quotes)), number_of_quotes)
+            number_of_quotes = input()
+
+            if number_of_quotes.isdigit() and 5 <= int(number_of_quotes) <= 20:
+                selected_quotes = random.sample(range(0, len(quotes)), int(number_of_quotes))
                 break
 
             print("Please select integer number between 5 and 20")
