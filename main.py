@@ -81,7 +81,7 @@ class Quotes:
                 or self.number_of_most_extreme == 0:
             print("\nThere was no most extreme quote")
         else:
-            print(f"\nThere was {self.number_of_most_extreme} quotes with highest extreme score: "
+            print(f"\nThere were {self.number_of_most_extreme} quotes with highest extreme score: "
                   f"\n\t{self.most_extreme_quote}\nwith extreme score: {self.most_extreme}")
 
 
