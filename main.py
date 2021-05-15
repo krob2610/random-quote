@@ -1,127 +1,92 @@
-import requests
-import random
+"""Simple application that will select 'n' random Kanye West quotes,
+rate them and then select the most extreme
+quote(or quotes if there is more then one) with 'extremes score'"""
 from concurrent.futures import ThreadPoolExecutor, wait
+import random
+import requests
+
 
 class Quotes:
+    """Class which contains all necessary methods to provide solution for user"""
+
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self):
         self.url = 'https://raw.githubusercontent.com/ajzbc/kanye.rest/master/quotes.json'
-        self.positive, self.negative, self.neutral, self.most_extrime, self.number_of_most_extrime  = 0,0,0,0,0
-        self.most_extrime_quote = ""
-    def get_quots(self):
+        self.url2 = "https://sentim-api.herokuapp.com/api/v1/"
+        self.positive, self.negative, self.neutral = 0, 0, 0
+        self.most_extreme, self.number_of_most_extreme = 0, 0
+        self.most_extreme_quote = ""
+        self.selected_quotes = None
+
+    def get_quotes(self):
+        """Return all quotes """
         return requests.get(self.url).json()
 
     def collect_quotes(self):
+        """Get number given by user and select quotes """
         print("Enter the number of random Quotes you want to get: ", end="")
-        quots = self.get_quots()
+        quotes = self.get_quotes()
 
         while True:
-            number_of_quots = int(input())
-            if isinstance(number_of_quots, int) and 5<=number_of_quots<=20:
-                selected_quotes = random.sample(range(0,len(quots)),number_of_quots)
-                break;
-            else:
-                print("Please select integer number between 5 and 20\nEnter the number of random Quotes you want to get: ", end="")
+            number_of_quotes = int(input())
+            if isinstance(number_of_quotes, int) and 5 <= number_of_quotes <= 20:
+                selected_quotes = random.sample(range(0, len(quotes)), number_of_quotes)
+                break
+
+            print("Please select integer number between 5 and 20")
+            print("Enter the number of random Quotes you want to get: ", end="")
 
         print("Quotes selected for you: ", end="\n\n\t")
-        self.selected_quots = [quots[int(i)] for i in selected_quotes]
-        print(*self.selected_quots, sep="\n\t")
+        self.selected_quotes = [quotes[int(i)] for i in selected_quotes]
+        print(*self.selected_quotes, sep="\n\t")
 
-    def get_scoore(self, quote_text):
-        quote_json = requests.post("https://sentim-api.herokuapp.com/api/v1/", json={"text": quote_text}, headers = {"Accept": "application/json", "Content-Type": "application/json"}).json()
+    def get_score(self, quote_text):
+        """Calculate number of positive, negative and neutral quotes.
+        Searching for most extreme quote with 'extremes score' (where 0 <= 'extremes score' <= 1)"""
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        quote_json = requests.post(self.url2, json={"text": quote_text}, headers=headers).json()
 
         if quote_json["result"]["polarity"] > 0:
-            self.positive+=1
+            self.positive += 1
         elif quote_json["result"]["polarity"] < 0:
-            self.negative+=1
+            self.negative += 1
         else:
-            self.neutral+=1
-        if self.most_extrime < abs(quote_json["result"]["polarity"]):
-            self.most_extrime = abs(quote_json["result"]["polarity"])
-            self.most_extrime_quote = quote_json["sentences"][0]["sentence"]
-            self.number_of_most_extrime = 1
-        elif self.most_extrime == abs(quote_json["result"]["polarity"]) and self.most_extrime!=0:
-            self.most_extrime_quote += "\n\t" + quote_json["sentences"][0]["sentence"]
-            self.number_of_most_extrime +=1
+            self.neutral += 1
+        if self.most_extreme < abs(quote_json["result"]["polarity"]):
+            self.most_extreme = abs(quote_json["result"]["polarity"])
+            self.most_extreme_quote = quote_json["sentences"][0]["sentence"]
+            self.number_of_most_extreme = 1
+        elif self.most_extreme == abs(quote_json["result"]["polarity"]) and self.most_extreme != 0:
+            self.most_extreme_quote += "\n\t" + quote_json["sentences"][0]["sentence"]
+            self.number_of_most_extreme += 1
         return quote_json
-    def count_Scoore(self):
-        with ThreadPoolExecutor() as executor:
-            res = [executor.submit(self.get_scoore,quote) for quote in self.selected_quots]
-            wait(res)
-        #print(res[8].result())
-    def Print_results(self):
-        #time.sleep(2)
-        print(f"\nnumber of positive: {self.positive}\nnumber of negative {self.negative}\nnumber of neutral: {self.neutral}")
-        if self.number_of_most_extrime == 1:
-            print(f"\nThe most extrime quote is: \n\t{self.most_extrime_quote}\n\nwith extreme scoore: {self.most_extrime}")
-        elif self.number_of_most_extrime == len(self.selected_quots) or self.number_of_most_extrime == 0:
-            print("\nThere was no most extrime quote")
-        else:
-            print(f"\nThere was {self.number_of_most_extrime} quotes with highest extrime scoore: \n\t{self.most_extrime_quote}\nwith extreme scoore: {self.most_extrime}")
-def get_scoore(quote_text):
-    return requests.post("https://sentim-api.herokuapp.com/api/v1/", json={"text": quote_text}, headers = {"Accept": "application/json", "Content-Type": "application/json"}).json()
 
-def get_quots():
-    return requests.get('https://raw.githubusercontent.com/ajzbc/kanye.rest/master/quotes.json').json()
-    #requests.get('https://api.kanye.rest/').json()["quote"]
-# Press the green button in the gutter to run the script.
+    def count_score(self):
+        """Runs get_score in multithreading """
+        with ThreadPoolExecutor() as executor:
+            res = [executor.submit(self.get_score, q) for q in self.selected_quotes]
+            wait(res)
+
+    def print_results(self):
+        """Print results to console"""
+        print(f"\nnumber of positive: {self.positive}"
+              f"\nnumber of negative {self.negative}"
+              f"\nnumber of neutral: {self.neutral}")
+        if self.number_of_most_extreme == 1:
+            print(f"\nThe most extreme quote is: "
+                  f"\n\t{self.most_extreme_quote}"
+                  f"\nwith extreme score: {self.most_extreme}")
+        elif self.number_of_most_extreme == len(self.selected_quotes) \
+                or self.number_of_most_extreme == 0:
+            print("\nThere was no most extreme quote")
+        else:
+            print(f"\nThere was {self.number_of_most_extreme} quotes with highest extreme score: "
+                  f"\n\t{self.most_extreme_quote}\nwith extreme score: {self.most_extreme}")
+
+
 if __name__ == '__main__':
     quote = Quotes()
     quote.collect_quotes()
-    quote.count_Scoore()
-    quote.Print_results()
-    # print("Enter the number of random Quotes you want to get: ", end="")
-    # quots = get_quots()
-    #
-    # while True:
-    #     number_of_quots = int(input())
-    #     if isinstance(number_of_quots, int) and 5<=number_of_quots<=20:
-    #         selected_quotes = random.sample(range(0,len(quots)),number_of_quots)
-    #         break;
-    #     else:
-    #         print("Please select integer number between 5 and 20\nEnter the number of random Quotes you want to get: ", end="")
-    #
-    # print("Quotes selected for you: ", end="\n\t")
-    # selected_Quots = [quots[int(i)] for i in selected_quotes]
-    # print(*selected_Quots, sep="\n\t")
-
-    #selected_quotes =
-    """sending post request"""
-
-    # positive, negative, neutral, most_extrime, number_of_most_extrime  = 0,0,0,0,0
-    # most_extrime_quote = ""
-    #
-    # for i in range(0, number_of_quots):
-    #     post = requests.post("https://sentim-api.herokuapp.com/api/v1/", json={"text": selected_Quots[i]}, headers = {"Accept": "application/json", "Content-Type": "application/json"})
-    #     if post.json()["result"]["polarity"] > 0:
-    #         positive+=1
-    #     elif post.json()["result"]["polarity"] < 0:
-    #         negative+=1
-    #     else:
-    #         neutral+=1
-    #
-    #     if most_extrime < abs(post.json()["result"]["polarity"]):
-    #         most_extrime = abs(post.json()["result"]["polarity"])
-    #         most_extrime_quote = selected_Quots[i]
-    #         number_of_most_extrime = 1
-    #     elif most_extrime == abs(post.json()["result"]["polarity"]) and most_extrime!=0:
-    #         most_extrime_quote += "\n" + selected_Quots[i]
-    #         number_of_most_extrime +=1
-    #     print(post.json()["result"]["polarity"])
-    #
-    # print(f"number of positive: {positive}\nnumber of negative {negative}\nnumber of neutral: {neutral}")
-    #
-    # if number_of_most_extrime == 1:
-    #     print(f"The most extrime quote is: \n{most_extrime_quote}\n with extreme scoore: {most_extrime}")
-    # elif number_of_most_extrime == number_of_quots or number_of_most_extrime == 0:
-    #         print("There was no most extrime quote")
-    # else:
-    #     print(f"There was {number_of_most_extrime} quotes with highest extrime scoore: \n{most_extrime_quote}\nwith extreme scoore: {most_extrime}")
-    #
-    """przyspieszamy multithreading"""
-    #list_of_scoores = []
-    # with ThreadPoolExecutor() as executor:
-    #     res = [executor.submit(get_scoore,quote) for quote in selected_Quots]
-    #     wait(res)
-    # print(res[8].result())
-
-
+    quote.count_score()
+    quote.print_results()
