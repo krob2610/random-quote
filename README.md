@@ -1,10 +1,10 @@
 # Kanye West Quotes
 
 A simple console program to grab few random quotes from webpage "https://kanye.rest/" and then show them to user. 
-Next collected quotes runs through SENTIM-API: "https://sentim-api.herokuapp.com/" in order to get polarity aspect. 
+Next, collected quotes run through SENTIM-API: "https://sentim-api.herokuapp.com/" in order to get polarity aspect. 
 After this user gets total number of positive, negative and neutral quotes,
 as well as the most extreme quote with extreme score(|polarity aspect|).
-If there is more than one quotes with the exact same extreme score, all of them will be given to user. 
+If there is more than one quote with the exact same extreme score, all of them will be given to user. 
 
 ### Requirements:
 
